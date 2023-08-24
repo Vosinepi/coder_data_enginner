@@ -7,39 +7,39 @@ sys.path.append(".")
 from util.db import engine
 from cryptos_api import precio_historico
 
-# descargo datos de cryptos
+
+# defino el periodo de tiempo a descargar
 ultimos_365_dias = dt.datetime.now() - pd.offsets.Day(365)
 periodo = ultimos_365_dias
 
 
-after_date = periodo.strftime("%Y-%m-%d")
+# defino las criptomonedas a descargar
+coins = [
+    "btc",
+    "eth",
+    "op",
+    "bnb",
+    "ada",
+    "doge",
+    "dot",
+    "xrp",
+    "ltc",
+    "link",
+    "bch",
+]
 
-btc = precio_historico("btc", "kucoin", after=after_date)
-eth = precio_historico("eth", "kucoin", after=after_date)
-op = precio_historico("op", "kucoin", after=after_date)
-bnb = precio_historico("bnb", "kucoin", after=after_date)
-ada = precio_historico("ada", "kucoin", after=after_date)
-doge = precio_historico("doge", "kucoin", after=after_date)
-dot = precio_historico("dot", "kucoin", after=after_date)
-xrp = precio_historico("xrp", "kucoin", after=after_date)
-ltc = precio_historico("ltc", "kucoin", after=after_date)
-link = precio_historico("link", "kucoin", after=after_date)
-bch = precio_historico("bch", "kucoin", after=after_date)
 
-# creo un diccionario con los datos de las criptomonedas
-coins = {
-    "btc": btc,
-    "eth": eth,
-    "op": op,
-    "bnb": bnb,
-    "ada": ada,
-    "doge": doge,
-    "dot": dot,
-    "xrp": xrp,
-    "ltc": ltc,
-    "link": link,
-    "bch": bch,
-}
+# descargo datos de cryptos
+def crypto_activo(coins):
+    after_date = periodo.strftime("%Y-%m-%d")
+    cryptos = {}
+    for coin in coins:
+        print(f"Descargando datos de {coin}")
+        cryptos[coin] = precio_historico(coin, "kucoin", after=after_date)
+        print(f"Datos de {coin} descargados")
+    print(cryptos.keys())
+    return cryptos
+
 
 # creo la tabla ismaelpiovani_coderhouse.cryptos
 tabla = (
@@ -63,12 +63,12 @@ def make_table():
     CREATE TABLE IF NOT EXISTS ismaelpiovani_coderhouse.cryptos (
         {tabla[0]} VARCHAR(255) NOT NULL,
         {tabla[1]} DATE,
-        {tabla[2]} INT,
-        {tabla[3]} INT,
-        {tabla[4]} INT,
-        {tabla[5]} INT,
-        {tabla[6]} INT,
-        {tabla[7]} INT,
+        {tabla[2]} FLOAT,
+        {tabla[3]} FLOAT,
+        {tabla[4]} FLOAT,
+        {tabla[5]} FLOAT,
+        {tabla[6]} FLOAT,
+        {tabla[7]} FLOAT,
         PRIMARY KEY ({tabla[0]})
     );
     """
@@ -80,7 +80,7 @@ def make_table():
 # cargo en la tabla cryptos los datos de las criptomonedas
 
 
-def load_db(coins):
+def load_db(list_of_coins):
     """
     La función `load_db` inserta datos de un diccionario de monedas en una tabla de base de datos
     llamada `cryptos`.
@@ -91,19 +91,19 @@ def load_db(coins):
     """
     conn = engine.connect()
 
-    for crypto in coins:
+    for crypto in list_of_coins:
         print(f"insertando datos de {crypto} en la tabla cryptos")
 
-        for i in range(len(coins[crypto]["result"]["86400"])):
+        for i in range(len(list_of_coins[crypto]["result"]["86400"])):
             timestamp = dt.datetime.fromtimestamp(
-                coins[crypto]["result"]["86400"][i][0]
+                list_of_coins[crypto]["result"]["86400"][i][0]
             )
-            open_price = coins[crypto]["result"]["86400"][i][1]
-            high_price = coins[crypto]["result"]["86400"][i][2]
-            low_price = coins[crypto]["result"]["86400"][i][3]
-            close_price = coins[crypto]["result"]["86400"][i][4]
-            volume = coins[crypto]["result"]["86400"][i][5]
-            na = coins[crypto]["result"]["86400"][i][6]
+            open_price = list_of_coins[crypto]["result"]["86400"][i][1]
+            high_price = list_of_coins[crypto]["result"]["86400"][i][2]
+            low_price = list_of_coins[crypto]["result"]["86400"][i][3]
+            close_price = list_of_coins[crypto]["result"]["86400"][i][4]
+            volume = list_of_coins[crypto]["result"]["86400"][i][5]
+            na = list_of_coins[crypto]["result"]["86400"][i][6]
 
             # Verificar si el registro ya existe
             query_check = f"""
@@ -143,4 +143,4 @@ def load_db(coins):
 
 
 make_table()
-load_db(coins)
+load_db(crypto_activo(coins))

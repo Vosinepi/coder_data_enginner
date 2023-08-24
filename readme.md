@@ -37,7 +37,7 @@ python -m venv venv
 - Activar el entorno virtual
 - Instalar las dependencias
 - Crear un archivo .env con las variables de entorno correspondientes al usuario/alumno
-- Ejecutar el script load_data.py
+- Ejecutar el script load_db.py
 
 ```
 
