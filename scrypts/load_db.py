@@ -10,8 +10,8 @@ from cryptos_api import precio_historico
 
 
 # defino el periodo de tiempo a descargar
-ultimos_365_dias = dt.datetime.now() - pd.offsets.Day(365 * 2)
-periodo = ultimos_365_dias
+dias_de_descarga = 365 * 2
+periodo = dt.datetime.now() - pd.offsets.Day(dias_de_descarga)
 
 
 # defino las criptomonedas a descargar
@@ -44,26 +44,41 @@ tabla = (
 
 # descargo datos de cryptos
 def crypto_activo(coins):
-    after_date = periodo.strftime("%Y-%m-%d")
+    """
+    La función `crypto_activo` recupera la última fecha de datos de una tabla y luego descarga datos
+    históricos de precios para una lista de criptomonedas.
+
+    :param coins: El parámetro "monedas" es una lista de símbolos de criptomonedas. Representa las
+    criptomonedas para las que desea descargar datos históricos de precios
+    :return: La función `crypto_activo` devuelve un diccionario `cryptos` que contiene los datos
+    históricos del precio de cada moneda en la lista `coins`.
+    """
+    # busco en la tabla la ultima fecha de datos
+    conn = engine.connect()
+    query = f"""
+    SELECT closetime
+    FROM ismaelpiovani_coderhouse.cryptos
+    ORDER BY closetime DESC
+    LIMIT 1;
+    """
+    result = conn.execute(query)
+    last_date = result.fetchone()[0]
+
+    print(f"La ultima fecha de datos es {last_date}")
+    conn.close()
+
+    if last_date is None:
+        after_date = periodo
+    else:
+        after_date = last_date + pd.offsets.Day(1)
+
     cryptos = {}
     for coin in coins:
         print(f"Descargando datos de {coin}")
         cryptos[coin] = precio_historico(coin, "kucoin", after=after_date)
         print(f"Datos de {coin} descargados")
-    print(cryptos.keys())
+
     return cryptos
-
-
-# divido los datos desacargados en lotes de 500 registros
-# data = crypto_activo(coins)
-# data_size = len(data)
-# batch_size = 500
-# cantidad_lotes = (data_size + batch_size) // batch_size + 1
-
-# def batchs(data, batch_size):
-#     for i in range(0, len(data), batch_size):
-#         print(f"Procesando lote {i // batch_size + 1} de {cantidad_lotes}")
-#         yield data[i : i + batch_size]
 
 
 # creo la tabla cryptos en la base de datos
@@ -143,76 +158,19 @@ def load_db(list_of_coins):
             }
         )
 
-        # compruebo que los values no esten en la tabla, si estan lo quito del df
-        for i in df.index:
-            timestamp = df["CloseTime"][i]
-
-            query_check = f"""
-            SELECT 1
-            FROM ismaelpiovani_coderhouse.cryptos
-            WHERE coin = '{crypto}' AND closetime = '{timestamp}';
-            """
-            result = conn.execute(query_check)
-            if result.fetchone():
-                print(f"El registro {timestamp} de {crypto} ya existe")
-                # remuevo esa linea
-                df.drop(i, inplace=True)
-
-        # paso el df a csv
-        df.to_sql(
-            "cryptos",
-            engine,
-            schema="ismaelpiovani_coderhouse",
-            if_exists="append",
-            index=False,
-            method="multi",
-        )
-
-        # for crypto in list_of_coins:
-        #     print(f"insertando datos de {crypto} en la tabla cryptos")
-
-        # for i in range(len(list_of_coins[crypto]["result"]["86400"])):
-        #     timestamp = dt.datetime.fromtimestamp(
-        #         list_of_coins[crypto]["result"]["86400"][i][0]
-        #     )
-        #     open_price = list_of_coins[crypto]["result"]["86400"][i][1]
-        #     high_price = list_of_coins[crypto]["result"]["86400"][i][2]
-        #     low_price = list_of_coins[crypto]["result"]["86400"][i][3]
-        #     close_price = list_of_coins[crypto]["result"]["86400"][i][4]
-        #     volume = list_of_coins[crypto]["result"]["86400"][i][5]
-        #     na = list_of_coins[crypto]["result"]["86400"][i][6]
-
-        #     # Verificar si el registro ya existe
-        #     query_check = f"""
-        #     SELECT 1
-        #     FROM ismaelpiovani_coderhouse.cryptos
-        #     WHERE coin = '{crypto}' AND closetime = '{timestamp}';
-        #     """
-
-        #     result = conn.execute(query_check)
-
-        #     if (
-        #         not result.fetchone()
-        #     ):  # Si no se encuentra el registro, entonces insertarlo
-        #         query_insert = f"""
-        #         INSERT INTO ismaelpiovani_coderhouse.cryptos
-        #         (coin, closetime, openprice, highprice, lowprice, closeprice, volume, na)
-        #         VALUES (
-        #             '{crypto}',
-        #             '{timestamp}',
-        #             {open_price},
-        #             {high_price},
-        #             {low_price},
-        #             {close_price},
-        #             {volume},
-        #             {na}
-        #         );
-        #         """
-
-        #         try:
-        #             conn.execute(query_insert)
-        #         except Exception as e:
-        #             print(f"Error al insertar datos de {crypto}: {str(e)}")
+        # si el df esta vacio no realizo la query
+        if df.empty:
+            print(f"no hay datos nuevos de {crypto}")
+            continue
+        else:
+            df.to_sql(
+                "cryptos",
+                engine,
+                schema="ismaelpiovani_coderhouse",
+                if_exists="append",
+                index=False,
+                method="multi",
+            )
 
         print(f"datos de {crypto} insertados en la tabla cryptos")
 
