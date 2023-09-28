@@ -1,3 +1,8 @@
 venv
 .vscode
 .csv
+logs
+airflow
+data
+basura
+__pycache__

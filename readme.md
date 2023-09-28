@@ -37,6 +37,12 @@ python -m venv venv
 - Activar el entorno virtual
 - Instalar las dependencias
 - Crear un archivo .env con las variables de entorno correspondientes al usuario/alumno
+- Crear contenedor de airflow para automatizar el proceso, correr el docker-compose-airflow.yaml
+
+```
+docker-compose -f docker-compose-airflow.yaml up -d
+```
+
 - Ejecutar el script load_db.py
 
 ```

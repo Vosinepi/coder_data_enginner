@@ -1,11 +1,11 @@
 import sys
 import pandas as pd
 import datetime as dt
-import io
 
-sys.path.append(".")
 
-from util.db import engine
+# sys.path.append(".")
+
+from db import cur
 from cryptos_api import precio_historico
 
 
@@ -54,18 +54,31 @@ def crypto_activo(coins):
     históricos del precio de cada moneda en la lista `coins`.
     """
     # busco en la tabla la ultima fecha de datos
-    conn = engine.connect()
+
     query = f"""
     SELECT closetime
     FROM ismaelpiovani_coderhouse.cryptos
     ORDER BY closetime DESC
     LIMIT 1;
     """
-    result = conn.execute(query)
-    last_date = result.fetchone()[0]
+
+    cur.execute(query)
+    last_date = cur.fetchone()[0]
 
     print(f"La ultima fecha de datos es {last_date}")
-    conn.close()
+
+    # conn = engine.connect()
+    # query = f"""
+    # SELECT closetime
+    # FROM ismaelpiovani_coderhouse.cryptos
+    # ORDER BY closetime DESC
+    # LIMIT 1;
+    # """
+    # result = conn.execute(query)
+    # last_date = result.fetchone()[0]
+
+    # print(f"La ultima fecha de datos es {last_date}")
+    # conn.close()
 
     if last_date is None:
         after_date = periodo
@@ -86,7 +99,7 @@ def make_table():
     """
     La función `make_table` crea una tabla en una base de datos si aún no existe.
     """
-    conn = engine.connect()
+
     query = f"""
     CREATE TABLE IF NOT EXISTS ismaelpiovani_coderhouse.cryptos (
         {tabla[0]} VARCHAR(255) NOT NULL,
@@ -101,12 +114,11 @@ def make_table():
     );
     """
 
-    conn.execute(query)
-    conn.close()
+    cur.execute(query)
 
 
 # cargo en la tabla cryptos los datos de las criptomonedas usando COPY
-def load_db(list_of_coins):
+def load_datab(coins):
     """
     La función `load_db` inserta datos de un diccionario de monedas en una tabla de base de datos
     llamada `cryptos`.
@@ -115,7 +127,8 @@ def load_db(list_of_coins):
     criptomonedas. Cada clave del diccionario representa una criptomoneda y el valor correspondiente es
     otro diccionario que contiene datos para esa criptomoneda
     """
-    conn = engine.connect()
+
+    list_of_coins = crypto_activo(coins)
 
     for crypto in list_of_coins:
         print(f"insertando datos de {crypto} en la tabla cryptos")
@@ -163,19 +176,26 @@ def load_db(list_of_coins):
             print(f"no hay datos nuevos de {crypto}")
             continue
         else:
-            df.to_sql(
-                "cryptos",
-                engine,
-                schema="ismaelpiovani_coderhouse",
-                if_exists="append",
-                index=False,
-                method="multi",
-            )
+            # inserto los datos en la tabla cryptos
+            query = f"""
+            INSERT INTO ismaelpiovani_coderhouse.cryptos
+            VALUES %s
+            """
+            cur.execute(query, df.values.tolist())
+
+            # df.to_sql(
+            #     "cryptos",
+            #     engine,
+            #     schema="ismaelpiovani_coderhouse",
+            #     if_exists="append",
+            #     index=False,
+            #     method="multi",
+            # )
 
         print(f"datos de {crypto} insertados en la tabla cryptos")
 
-    conn.close()
+    cur.close()
 
 
 make_table()
-load_db(crypto_activo(coins))
+load_datab(crypto_activo(coins))

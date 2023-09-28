@@ -10,3 +10,5 @@ db_password = os.getenv("DB_PASS")
 db_host = os.getenv("DB_HOST")
 db_port = os.getenv("DB_PORT")
 db_schema = "ismaelpiovani_coderhouse"
+api_key = os.getenv("API_KEY")
+api_secret = os.getenv("SECRET_KEY")

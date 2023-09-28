@@ -1,6 +1,8 @@
 import requests as req
 import pandas as pd
 
+from .settings import api_key, api_secret
+
 
 # Función para obtener el precio de una criptomoneda en un momento dado
 def precio_historico(symbol, exchange="binance", after="2020-01-01"):
@@ -23,10 +25,19 @@ def precio_historico(symbol, exchange="binance", after="2020-01-01"):
     url = "https://api.cryptowat.ch/markets/{exchage}/{symbol}usdc/ohlc".format(
         exchage=exchange, symbol=symbol
     )
+    # genero el response con la api_key y api_secret
+    header = {"X-CW-API-Key": api_key, "X-CW-API-Secret": api_secret}
+
     response = req.get(
         url,
         params={"periods": "86400", "after": str(int(pd.Timestamp(after).timestamp()))},
+        headers=header,
     )
+
+    # response = req.get(
+    #     url,
+    #     params={"periods": "86400", "after": str(int(pd.Timestamp(after).timestamp()))},
+    # )
     response.raise_for_status()
     data = response.json()
 
