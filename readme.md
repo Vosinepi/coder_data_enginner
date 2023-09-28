@@ -43,8 +43,6 @@ python -m venv venv
 docker-compose -f docker-compose-airflow.yaml up -d
 ```
 
-- Ejecutar el script load_db.py
-
 ```
 
 ## Contacto
