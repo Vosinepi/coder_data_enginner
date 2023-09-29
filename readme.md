@@ -43,6 +43,8 @@ python -m venv venv
 docker-compose -f docker-compose-airflow.yaml up -d
 ```
 
+- Importar las variables de entorno en airflow
+
 ```
 
 ## Contacto
