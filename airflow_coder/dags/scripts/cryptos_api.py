@@ -1,8 +1,6 @@
 import requests as req
 import pandas as pd
 
-# from .settings import api_key, api_secret
-
 
 # Función para obtener el precio de una criptomoneda en un momento dado
 def precio_historico(
