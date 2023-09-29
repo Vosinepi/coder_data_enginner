@@ -22,6 +22,7 @@ db_host = Variable.get("SECRET_DB_HOST")
 db_schema = Variable.get("DB_SCHEMA")
 db_port = Variable.get("DB_PORT")
 
+
 # Creo instancia de DAG se ejecuta a diario a las 11:30am UTC
 dag = DAG(
     dag_id="crypto_etl",

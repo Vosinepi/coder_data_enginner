@@ -56,7 +56,16 @@ x-airflow-common:
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'true'
     AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 10
-    AIRFLOW_VARIABLE_PRUEBA: 'prueba'
+    # variables entorno para dags
+    AIRFLOW_VAR_DB_NAME: data-engineer-database
+    AIRFLOW_VAR_DB_USER: ismaelpiovani_coderhouse
+    AIRFLOW_VAR_SECRET_DB_PASS: QmP53oE6r9
+    AIRFLOW_VAR_SECRET_DB_HOST: data-engineer-cluster.cyhh5bfevlmn.us-east-1.redshift.amazonaws.com
+    AIRFLOW_VAR_SECRET_API_KEY: Y64RECL5XF2KYQ2O0P42
+    AIRFLOW_VAR_DB_PORT: 5439
+    AIRFLOW_VAR_DB_SCHEMA: ismaelpiovani_coderhouse
+    AIRFLOW_VAR_SECRET_SECRET_KEY: ZwbYlC4BszsPB4XlXMcr9PBcAKD6hLr8lRX/GNv8
+    
 
   volumes:
     - ./dags:/opt/airflow/dags
