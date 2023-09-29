@@ -1,0 +1,9 @@
+{
+    "DB_NAME": "data-engineer-database",
+    "DB_PORT": 5439,
+    "DB_USER": "ismaelpiovani_coderhouse",
+    "SECRET_API_KEY": "Y64RECL5XF2KYQ2O0P42",
+    "SECRET_DB_HOST": "data-engineer-cluster.cyhh5bfevlmn.us-east-1.redshift.amazonaws.com",
+    "SECRET_DB_PASS": "QmP53oE6r9",
+    "SECRET_SECRET_KEY": "ZwbYlC4BszsPB4XlXMcr9PBcAKD6hLr8lRX/GNv8"
+}

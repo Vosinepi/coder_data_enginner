@@ -1,11 +1,17 @@
 import requests as req
 import pandas as pd
 
-from .settings import api_key, api_secret
+# from .settings import api_key, api_secret
 
 
 # Función para obtener el precio de una criptomoneda en un momento dado
-def precio_historico(symbol, exchange="binance", after="2020-01-01"):
+def precio_historico(
+    symbol,
+    exchange="binance",
+    after="2020-01-01",
+    api_key=None,
+    api_secret=None,
+):
     """
     La función `precio_historico` recupera datos históricos de precios para un símbolo de criptomoneda
     determinado de un intercambio específico a partir de una fecha específica.
@@ -22,23 +28,30 @@ def precio_historico(symbol, exchange="binance", after="2020-01-01"):
     :return: datos históricos de precios para un símbolo de criptomoneda determinado en un intercambio
     específico.
     """
-    url = "https://api.cryptowat.ch/markets/{exchage}/{symbol}usdc/ohlc".format(
-        exchage=exchange, symbol=symbol
-    )
-    # genero el response con la api_key y api_secret
-    header = {"X-CW-API-Key": api_key, "X-CW-API-Secret": api_secret}
+    if api_key is None or api_secret is None:
+        raise Exception("API Key and Secret required")
 
-    response = req.get(
-        url,
-        params={"periods": "86400", "after": str(int(pd.Timestamp(after).timestamp()))},
-        headers=header,
-    )
+    else:
+        url = "https://api.cryptowat.ch/markets/{exchage}/{symbol}usdc/ohlc".format(
+            exchage=exchange, symbol=symbol
+        )
+        # genero el response con la api_key y api_secret
+        header = {"X-CW-API-Key": api_key, "X-CW-API-Secret": api_secret}
 
-    # response = req.get(
-    #     url,
-    #     params={"periods": "86400", "after": str(int(pd.Timestamp(after).timestamp()))},
-    # )
-    response.raise_for_status()
-    data = response.json()
+        response = req.get(
+            url,
+            params={
+                "periods": "86400",
+                "after": str(int(pd.Timestamp(after).timestamp())),
+            },
+            headers=header,
+        )
 
-    return data
+        # response = req.get(
+        #     url,
+        #     params={"periods": "86400", "after": str(int(pd.Timestamp(after).timestamp()))},
+        # )
+        response.raise_for_status()
+        data = response.json()
+
+        return data

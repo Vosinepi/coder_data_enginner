@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG  # type: ignore
 from airflow.decorators import dag  # type: ignore
-
+from airflow.models import Variable  # type: ignore
 from airflow.operators.python import PythonOperator  # type: ignore
 from airflow.operators.email import EmailOperator  # type: ignore
 from airflow.operators.bash import BashOperator  # type: ignore
@@ -10,6 +10,17 @@ from airflow.operators.bash import BashOperator  # type: ignore
 
 from scripts.load_db import make_table, load_datab, coins
 
+# variables
+
+api_key = Variable.get("SECRET_API_KEY")
+api_secret = Variable.get("SECRET_SECRET_KEY")
+
+db_name = Variable.get("DB_NAME")
+db_user = Variable.get("DB_USER")
+db_password = Variable.get("SECRET_DB_PASS")
+db_host = Variable.get("SECRET_DB_HOST")
+db_schema = Variable.get("DB_SCHEMA")
+db_port = Variable.get("DB_PORT")
 
 # Creo instancia de DAG se ejecuta a diario a las 11:30am UTC
 dag = DAG(
@@ -27,23 +38,34 @@ dag = DAG(
     },
 )
 
+
 # Tarea 0: Crear tabla cryptos
 t0 = PythonOperator(
     task_id="create_table",
     python_callable=make_table,
+    op_args=[db_name, db_user, db_password, db_host, db_port],
     dag=dag,
 )
 # Tarea 1: Cargar datos en la tabla cryptos
 t1 = PythonOperator(
     task_id="load_db",
     python_callable=load_datab,
-    op_args=[coins],
+    op_args=[
+        coins,
+        api_key,
+        api_secret,
+        db_name,
+        db_user,
+        db_password,
+        db_host,
+        db_port,
+    ],
     dag=dag,
 )
 
 """"No esta configurado el SMTP por cuestion de seguridad"""
 
-# t2 = EmailOperator(
+# t3 = EmailOperator(
 #     task_id="send_email",  # No esta configurado el SMTP por cuestion de seguridad
 #     to="ismaelpiovani@gmail.com",
 #     subject="Crypto ETL",
@@ -52,10 +74,10 @@ t1 = PythonOperator(
 # )
 
 # Tarea 2: echo de confirmacion de carga de datos
-t2 = BashOperator(
+t4 = BashOperator(
     task_id="send_email",
     bash_command="echo 'Los datos fueron cargados correctamente'",
     dag=dag,
 )
 
-t0 >> t1 >> t2
+t0 >> t1 >> t4

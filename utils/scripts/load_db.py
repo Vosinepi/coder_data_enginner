@@ -5,7 +5,7 @@ import datetime as dt
 
 # sys.path.append(".")
 
-from db import cur
+from db import cur, conn
 from cryptos_api import precio_historico
 
 
@@ -63,7 +63,10 @@ def crypto_activo(coins):
     """
 
     cur.execute(query)
-    last_date = cur.fetchone()[0]
+    try:
+        last_date = cur.fetchone()[0]
+    except TypeError:
+        last_date = None
 
     print(f"La ultima fecha de datos es {last_date}")
 
@@ -115,6 +118,7 @@ def make_table():
     """
 
     cur.execute(query)
+    conn.commit()
 
 
 # cargo en la tabla cryptos los datos de las criptomonedas usando COPY
@@ -145,9 +149,10 @@ def load_datab(coins):
         )
 
         df = pd.DataFrame(list_of_coins[crypto]["result"]["86400"], columns=dataframe)
-        df["CloseTime"] = pd.to_datetime(df["CloseTime"], unit="s")
-        df["CloseTime"] = df["CloseTime"].dt.strftime("%Y-%m-%d")
         df["Coin"] = crypto
+        df["CloseTime"] = pd.to_datetime(df["CloseTime"], unit="s")
+        df["CloseTime"] = df["CloseTime"].dt.date
+
         df = df[
             [
                 "Coin",
@@ -160,28 +165,32 @@ def load_datab(coins):
                 "NA",
             ]
         ]
-        df = df.astype(
-            {
-                "OpenPrice": float,
-                "HighPrice": float,
-                "LowPrice": float,
-                "ClosePrice": float,
-                "Volume": float,
-                "NA": float,
-            }
-        )
+        # df = df.astype(
+        #     {
+        #         "OpenPrice": float,
+        #         "HighPrice": float,
+        #         "LowPrice": float,
+        #         "ClosePrice": float,
+        #         "Volume": float,
+        #         "NA": float,
+        #     }
+        # )
 
+        print(f"datos de {crypto} convertidos a dataframe")
+        print(df)
         # si el df esta vacio no realizo la query
         if df.empty:
             print(f"no hay datos nuevos de {crypto}")
             continue
         else:
             # inserto los datos en la tabla cryptos
-            query = f"""
-            INSERT INTO ismaelpiovani_coderhouse.cryptos
-            VALUES %s
-            """
-            cur.execute(query, df.values.tolist())
+            print(f"insertando datos de {crypto} en la tabla cryptos")
+            query = "INSERT INTO ismaelpiovani_coderhouse.cryptos (coin, closetime, openprice, highprice, lowprice, closeprice, volume, na) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+            # a_tabla = df.values.tolist()
+            # print(a_tabla)
+            # inserto el df en la tabla cryptos
+            a_tabla = df.to_records(index=False).tolist()
+            cur.executemany(query, a_tabla)
 
             # df.to_sql(
             #     "cryptos",
@@ -191,11 +200,13 @@ def load_datab(coins):
             #     index=False,
             #     method="multi",
             # )
-
+        conn.commit()
         print(f"datos de {crypto} insertados en la tabla cryptos")
 
     cur.close()
+    print("Todos los datos ya estan cargados en la tabla cryptos")
+    print("Base de datos cerrada")
 
 
 make_table()
-load_datab(crypto_activo(coins))
+load_datab(coins)

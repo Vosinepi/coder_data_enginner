@@ -5,7 +5,7 @@ import datetime as dt
 
 # sys.path.append(".")
 
-from .db import cur
+from .db import ddbb_conection
 from .cryptos_api import precio_historico
 
 
@@ -43,7 +43,7 @@ tabla = (
 
 
 # descargo datos de cryptos
-def crypto_activo(coins):
+def crypto_activo(coins, api_key, api_secret, conn):
     """
     La función `crypto_activo` recupera la última fecha de datos de una tabla y luego descarga datos
     históricos de precios para una lista de criptomonedas.
@@ -54,6 +54,8 @@ def crypto_activo(coins):
     históricos del precio de cada moneda en la lista `coins`.
     """
     # busco en la tabla la ultima fecha de datos
+
+    cur = conn.cursor()
 
     query = f"""
     SELECT closetime
@@ -88,17 +90,22 @@ def crypto_activo(coins):
     cryptos = {}
     for coin in coins:
         print(f"Descargando datos de {coin}")
-        cryptos[coin] = precio_historico(coin, "kucoin", after=after_date)
+        cryptos[coin] = precio_historico(
+            coin, "kucoin", after_date, api_key, api_secret
+        )
         print(f"Datos de {coin} descargados")
 
     return cryptos
 
 
 # creo la tabla cryptos en la base de datos
-def make_table():
+def make_table(db_name, db_user, db_password, db_host, db_port):
     """
     La función `make_table` crea una tabla en una base de datos si aún no existe.
     """
+    conn = ddbb_conection(db_name, db_user, db_password, db_host, db_port)
+
+    cur = conn.cursor()
 
     query = f"""
     CREATE TABLE IF NOT EXISTS ismaelpiovani_coderhouse.cryptos (
@@ -115,10 +122,14 @@ def make_table():
     """
 
     cur.execute(query)
+    conn.commit()
+    conn.close()
 
 
 # cargo en la tabla cryptos los datos de las criptomonedas usando COPY
-def load_datab(coins):
+def load_datab(
+    coins, api_key, api_secret, db_name, db_user, db_password, db_host, db_port
+):
     """
     La función `load_db` inserta datos de un diccionario de monedas en una tabla de base de datos
     llamada `cryptos`.
@@ -127,8 +138,13 @@ def load_datab(coins):
     criptomonedas. Cada clave del diccionario representa una criptomoneda y el valor correspondiente es
     otro diccionario que contiene datos para esa criptomoneda
     """
+    # Conecto a la base de datos
+    conn = ddbb_conection(db_name, db_user, db_password, db_host, db_port)
 
-    list_of_coins = crypto_activo(coins)
+    # descargo los datos de las criptomonedas
+    list_of_coins = crypto_activo(coins, api_key, api_secret, conn)
+
+    cur = conn.cursor()
 
     for crypto in list_of_coins:
         print(f"insertando datos de {crypto} en la tabla cryptos")
@@ -145,9 +161,10 @@ def load_datab(coins):
         )
 
         df = pd.DataFrame(list_of_coins[crypto]["result"]["86400"], columns=dataframe)
-        df["CloseTime"] = pd.to_datetime(df["CloseTime"], unit="s")
-        df["CloseTime"] = df["CloseTime"].dt.strftime("%Y-%m-%d")
         df["Coin"] = crypto
+        df["CloseTime"] = pd.to_datetime(df["CloseTime"], unit="s")
+        df["CloseTime"] = df["CloseTime"].dt.date
+
         df = df[
             [
                 "Coin",
@@ -160,41 +177,27 @@ def load_datab(coins):
                 "NA",
             ]
         ]
-        df = df.astype(
-            {
-                "OpenPrice": float,
-                "HighPrice": float,
-                "LowPrice": float,
-                "ClosePrice": float,
-                "Volume": float,
-                "NA": float,
-            }
-        )
 
+        print(f"datos de {crypto} convertidos a dataframe")
+        print(df)
         # si el df esta vacio no realizo la query
         if df.empty:
             print(f"no hay datos nuevos de {crypto}")
             continue
         else:
             # inserto los datos en la tabla cryptos
-            query = f"""
-            INSERT INTO ismaelpiovani_coderhouse.cryptos
-            VALUES %s
-            """
-            cur.execute(query, df.values.tolist())
+            print(f"insertando datos de {crypto} en la tabla cryptos")
+            query = "INSERT INTO ismaelpiovani_coderhouse.cryptos (coin, closetime, openprice, highprice, lowprice, closeprice, volume, na) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
 
-            # df.to_sql(
-            #     "cryptos",
-            #     engine,
-            #     schema="ismaelpiovani_coderhouse",
-            #     if_exists="append",
-            #     index=False,
-            #     method="multi",
-            # )
+            a_tabla = df.to_records(index=False).tolist()
+            cur.executemany(query, a_tabla)
 
+        conn.commit()
         print(f"datos de {crypto} insertados en la tabla cryptos")
 
     cur.close()
+    print("Todos los datos ya estan cargados en la tabla cryptos")
+    print("Base de datos cerrada")
 
 
 # make_table()
