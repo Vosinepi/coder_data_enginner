@@ -1,12 +1,11 @@
-import sys
 import pandas as pd
 import datetime as dt
 
 
 # sys.path.append(".")
 
-from .db import ddbb_conection
-from .cryptos_api import precio_historico
+from db import ddbb_conection
+from cryptos_api import precio_historico
 
 
 # defino el periodo de tiempo a descargar

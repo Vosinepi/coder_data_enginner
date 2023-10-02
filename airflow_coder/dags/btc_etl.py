@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+import os
+import sys
 
 from airflow import DAG  # type: ignore
 from airflow.decorators import dag  # type: ignore
@@ -7,8 +9,10 @@ from airflow.operators.python import PythonOperator  # type: ignore
 from airflow.operators.email import EmailOperator  # type: ignore
 from airflow.operators.bash import BashOperator  # type: ignore
 
+# Agregar la carpeta 'plugins' al PYTHONPATH
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "plugins")))
 
-from scripts.load_db import make_table, load_datab, coins
+from load_db import make_table, load_datab, coins
 
 # variables
 
