@@ -7,38 +7,39 @@ import datetime as dt
 
 from db import cur, conn
 from cryptos_api import precio_historico
-
+from settings import api_key, api_secret
 
 # defino el periodo de tiempo a descargar
-dias_de_descarga = 365 * 2
-periodo = dt.datetime.now() - pd.offsets.Day(dias_de_descarga)
+dias_de_descarga = 365 * 1
+periodo = (dt.datetime.now() - pd.offsets.Day(dias_de_descarga)).strftime(
+    "%d %b %Y 00:00:00"
+)
 
 
 # defino las criptomonedas a descargar
 coins = [
-    "btc",
-    "eth",
-    "op",
-    "bnb",
-    "ada",
-    "doge",
-    "dot",
-    "xrp",
-    "ltc",
-    "link",
-    "bch",
+    "BTCUSDT",
+    "ETHUSDT",
+    "OPUSDT",
+    "BNBUSDT",
+    "ADAUSDT",
+    "DOGEUSDT",
+    "DOTUSDT",
+    "XRPUSDT",
+    "LTCUSDT",
+    "LINKUSDT",
+    "BCHUSDT",
 ]
 
 # creo la tabla ismaelpiovani_coderhouse.cryptos
 tabla = (
-    "Coin",
-    "CloseTime",
-    "OpenPrice",
-    "HighPrice",
-    "LowPrice",
-    "ClosePrice",
-    "Volume",
-    "NA",
+    "coin",
+    "opentime",
+    "openprice",
+    "highprice",
+    "lowprice",
+    "closeprice",
+    "volume",
 )
 
 
@@ -56,9 +57,9 @@ def crypto_activo(coins):
     # busco en la tabla la ultima fecha de datos
 
     query = f"""
-    SELECT closetime
+    SELECT opentime
     FROM ismaelpiovani_coderhouse.cryptos
-    ORDER BY closetime DESC
+    ORDER BY opentime DESC
     LIMIT 1;
     """
 
@@ -85,13 +86,18 @@ def crypto_activo(coins):
 
     if last_date is None:
         after_date = periodo
+    elif last_date == dt.date.today():
+        print("No hay datos nuevos para descargar")
+        sys.exit()
     else:
-        after_date = last_date + pd.offsets.Day(1)
+        after_date = (last_date + pd.offsets.Day(1)).strftime("%d %b %Y 00:00:00")
 
     cryptos = {}
     for coin in coins:
         print(f"Descargando datos de {coin}")
-        cryptos[coin] = precio_historico(coin, "kucoin", after=after_date)
+        cryptos[coin] = precio_historico(
+            coin, api_key=api_key, api_secret=api_secret, after=after_date
+        )
         print(f"Datos de {coin} descargados")
 
     return cryptos
@@ -112,7 +118,6 @@ def make_table():
         {tabla[4]} FLOAT,
         {tabla[5]} FLOAT,
         {tabla[6]} FLOAT,
-        {tabla[7]} FLOAT,
         PRIMARY KEY ({tabla[0]})
     );
     """
@@ -139,30 +144,28 @@ def load_datab(coins):
 
         # paso los values a un dataframe
         dataframe = (
-            "CloseTime",
+            "OpenTime",
             "OpenPrice",
             "HighPrice",
             "LowPrice",
             "ClosePrice",
             "Volume",
-            "NA",
         )
 
-        df = pd.DataFrame(list_of_coins[crypto]["result"]["86400"], columns=dataframe)
+        df = pd.DataFrame(list_of_coins[crypto], columns=dataframe)
         df["Coin"] = crypto
-        df["CloseTime"] = pd.to_datetime(df["CloseTime"], unit="s")
-        df["CloseTime"] = df["CloseTime"].dt.date
+        df["OpenTime"] = pd.to_datetime(df["OpenTime"], unit="s")
+        df["OpenTime"] = df["OpenTime"].dt.date
 
         df = df[
             [
                 "Coin",
-                "CloseTime",
+                "OpenTime",
                 "OpenPrice",
                 "HighPrice",
                 "LowPrice",
                 "ClosePrice",
                 "Volume",
-                "NA",
             ]
         ]
         # df = df.astype(
@@ -185,7 +188,7 @@ def load_datab(coins):
         else:
             # inserto los datos en la tabla cryptos
             print(f"insertando datos de {crypto} en la tabla cryptos")
-            query = "INSERT INTO ismaelpiovani_coderhouse.cryptos (coin, closetime, openprice, highprice, lowprice, closeprice, volume, na) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+            query = "INSERT INTO ismaelpiovani_coderhouse.cryptos (coin, opentime, openprice, highprice, lowprice, closeprice, volume) VALUES (%s, %s, %s, %s, %s, %s, %s)"
             # a_tabla = df.values.tolist()
             # print(a_tabla)
             # inserto el df en la tabla cryptos

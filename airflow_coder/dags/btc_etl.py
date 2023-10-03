@@ -12,7 +12,7 @@ from airflow.operators.bash import BashOperator  # type: ignore
 # Agregar la carpeta 'plugins' al PYTHONPATH
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "plugins")))
 
-from load_db import make_table, load_datab, coins
+from load_db import make_table, load_datab, coins # type: ignore
 
 # variables
 

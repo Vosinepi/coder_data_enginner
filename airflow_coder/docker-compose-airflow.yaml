@@ -61,10 +61,10 @@ x-airflow-common:
     AIRFLOW_VAR_DB_USER: ismaelpiovani_coderhouse
     AIRFLOW_VAR_SECRET_DB_PASS: QmP53oE6r9
     AIRFLOW_VAR_SECRET_DB_HOST: data-engineer-cluster.cyhh5bfevlmn.us-east-1.redshift.amazonaws.com
-    AIRFLOW_VAR_SECRET_API_KEY: Y64RECL5XF2KYQ2O0P42
+    AIRFLOW_VAR_SECRET_API_KEY: 1epvmQP5gX1OSwuXgJ8vK8TYQrrtL5BClt4yVMEv4wU8ZFy6bVmRscCA1kMTFjjD
     AIRFLOW_VAR_DB_PORT: 5439
     AIRFLOW_VAR_DB_SCHEMA: ismaelpiovani_coderhouse
-    AIRFLOW_VAR_SECRET_SECRET_KEY: ZwbYlC4BszsPB4XlXMcr9PBcAKD6hLr8lRX/GNv8
+    AIRFLOW_VAR_SECRET_SECRET_KEY: m2WQDllkUMn5WEHi8nPnyaeNbl515byTJbKj4DpLgteNnEC3u95f09fgUGzImLaK
     
 
   volumes:
