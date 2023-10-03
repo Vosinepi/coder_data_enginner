@@ -1,9 +1,6 @@
 import pandas as pd
 import datetime as dt
-import sys
 
-
-# sys.path.append(".")
 
 from db import ddbb_conection
 from cryptos_api import precio_historico
@@ -11,9 +8,7 @@ from cryptos_api import precio_historico
 
 # defino el periodo de tiempo a descargar
 dias_de_descarga = 365 * 2
-periodo = (dt.datetime.now() - pd.offsets.Day(dias_de_descarga)).strftime(
-    "%d %b %Y 00:00:00"
-)
+periodo = (dt.datetime.now() - pd.offsets.Day(dias_de_descarga)).strftime("%d %b %Y ")
 
 
 # defino las criptomonedas a descargar
@@ -72,26 +67,15 @@ def crypto_activo(coins, api_key, api_secret, conn):
         last_date = None
 
     print(f"La ultima fecha de datos es {last_date}")
-    print(dt.date.today().strftime("%Y-%m-%d"))
+    print(dt.date.today().strftime("%d %b %Y %H:%M:%S"))
 
-    # conn = engine.connect()
-    # query = f"""
-    # SELECT closetime
-    # FROM ismaelpiovani_coderhouse.cryptos
-    # ORDER BY closetime DESC
-    # LIMIT 1;
-    # """
-    # result = conn.execute(query)
-    # last_date = result.fetchone()[0]
-
-    # print(f"La ultima fecha de datos es {last_date}")
-    # conn.close()
     cryptos = {}
 
     if last_date is None:
         after_date = periodo
     else:
-        after_date = (last_date + pd.offsets.Day(1)).strftime("%d %b %Y 00:00:00")
+        after_date = (last_date).strftime("%d %b %Y %H:%M:%S")
+
         print(f"La fecha de datos de after date es {after_date}")
 
     for coin in coins:
@@ -187,21 +171,30 @@ def load_datab(
             if df.empty:
                 print(f"no hay datos nuevos de {crypto}")
                 continue
+
             else:
-                # inserto los datos en la tabla cryptos
-                print(f"insertando datos de {crypto} en la tabla cryptos")
-                query = "INSERT INTO ismaelpiovani_coderhouse.cryptos (coin, opentima, openprice, highprice, lowprice, closeprice, volume) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                # compruebo que los datos a insertar con esa fecha no existan en la tabla
+                query = f"""
+                SELECT opentime
+                FROM ismaelpiovani_coderhouse.cryptos
+                WHERE opentime = '{df.iloc[0,1]}' AND coin = '{crypto}'
+                """
+                cur.execute(query)
+                result = cur.fetchone()
+                if result is not None:
+                    print(f"los datos de {crypto} ya estan en la tabla cryptos")
+                    continue
+                else:
+                    # inserto los datos en la tabla cryptos
+                    print(f"insertando datos de {crypto} en la tabla cryptos")
+                    query = "INSERT INTO ismaelpiovani_coderhouse.cryptos (coin, opentime, openprice, highprice, lowprice, closeprice, volume) VALUES (%s, %s, %s, %s, %s, %s, %s)"
 
-                a_tabla = df.to_records(index=False).tolist()
-                cur.executemany(query, a_tabla)
+                    a_tabla = df.to_records(index=False).tolist()
+                    cur.executemany(query, a_tabla)
 
-            conn.commit()
-            print(f"datos de {crypto} insertados en la tabla cryptos")
+                    conn.commit()
+                    print(f"datos de {crypto} insertados en la tabla cryptos")
 
         cur.close()
         print("Todos los datos ya estan cargados en la tabla cryptos")
         print("Base de datos cerrada")
-
-
-# make_table()
-# load_datab(crypto_activo(coins))
