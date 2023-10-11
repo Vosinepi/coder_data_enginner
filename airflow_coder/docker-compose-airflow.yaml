@@ -61,7 +61,7 @@ x-airflow-common:
     AIRFLOW__SMTP__SMTP_STARTTLS: True
     AIRFLOW__SMTP__SMTP_SSL: False
     AIRFLOW__SMTP__SMTP_USER: ismaelpiovani@gmail.com
-    AIRFLOW__SMTP__SMTP_PASSWORD: ulqsxugxxfxabcgi
+    AIRFLOW__SMTP__SMTP_PASSWORD: 
     AIRFLOW__SMTP__SMTP_PORT: 587
     AIRFLOW__SMTP__SMTP_MAIL_FROM: ismaelpiovani@gmail.com
 
@@ -75,7 +75,7 @@ x-airflow-common:
     AIRFLOW_VAR_DB_SCHEMA: ismaelpiovani_coderhouse
     AIRFLOW_VAR_SECRET_SECRET_KEY: m2WQDllkUMn5WEHi8nPnyaeNbl515byTJbKj4DpLgteNnEC3u95f09fgUGzImLaK
     AIRFLOW_VAR_SECRET_MAIL_USER: ismaelpiovani@gmail.com
-    AIRFLOW_VAR_SECRET_MAIL_PASS: ulqsxugxxfxabcgi
+    AIRFLOW_VAR_SECRET_MAIL_PASS: 
     
         
         
