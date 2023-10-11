@@ -12,7 +12,7 @@ from airflow.operators.bash import BashOperator  # type: ignore
 # Agregar la carpeta 'plugins' al PYTHONPATH
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "plugins")))
 
-from load_db import make_table, load_datab, coins # type: ignore
+from load_db import make_table, load_datab, coins, ultimos_datos_cargados  # type: ignore
 
 # variables
 
@@ -26,6 +26,23 @@ db_host = Variable.get("SECRET_DB_HOST")
 db_schema = Variable.get("DB_SCHEMA")
 db_port = Variable.get("DB_PORT")
 
+# direccion de correo para alertas modificar de ser necesario
+
+if Variable.get("destinatario", default_var=None) is None:
+    Variable.set("destinatario", "ismaelpiovani@gmail.com")
+else:
+    pass
+
+destinatario = Variable.get("destinatario")
+
+# variable para email con reporte de datos cargados
+
+if Variable.get("cantidad_dias") is None:
+    Variable.set("cantidad_dias", 1)
+else:
+    pass
+
+periodo = Variable.get("cantidad_dias")
 
 # Creo instancia de DAG se ejecuta a diario a las 11:30am UTC
 dag = DAG(
@@ -68,21 +85,34 @@ t1 = PythonOperator(
     dag=dag,
 )
 
-""""No esta configurado el SMTP por cuestion de seguridad"""
-
-# t3 = EmailOperator(
-#     task_id="send_email",  # No esta configurado el SMTP por cuestion de seguridad
-#     to="ismaelpiovani@gmail.com",
-#     subject="Crypto ETL",
-#     html_content="<h3>Los datos fueron cargados correctamente</h3>",
-#     dag=dag,
-# )
-
-# Tarea 2: echo de confirmacion de carga de datos
-t4 = BashOperator(
-    task_id="send_email",
-    bash_command="echo 'Los datos fueron cargados correctamente'",
+t2 = PythonOperator(
+    task_id="ultimo_datos_cargados",
+    python_callable=ultimos_datos_cargados,
+    op_args=[
+        destinatario,
+        db_name,
+        db_user,
+        db_password,
+        db_host,
+        db_port,
+        periodo,
+    ],
     dag=dag,
 )
 
-t0 >> t1 >> t4
+t3 = EmailOperator(
+    task_id="send_email",
+    to=destinatario,
+    subject="Crypto ETL",
+    html_content="<h3>Tareas concluidas</h3>",
+    dag=dag,
+)
+
+# Tarea 2: echo de confirmacion de carga de datos
+t4 = BashOperator(
+    task_id="echo",
+    bash_command="echo 'Tareas concluidas'",
+    dag=dag,
+)
+
+t0 >> t1 >> t2 >> t3 >> t4

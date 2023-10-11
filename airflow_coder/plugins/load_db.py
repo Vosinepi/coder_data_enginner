@@ -4,7 +4,9 @@ import datetime as dt
 
 from db import ddbb_conection
 from cryptos_api import precio_historico
+from alerts import enviar_mails
 
+from airflow.models import Variable  # type: ignore
 
 # defino el periodo de tiempo a descargar
 dias_de_descarga = 365 * 2
@@ -65,6 +67,12 @@ def crypto_activo(coins, api_key, api_secret, conn):
         last_date = cur.fetchone()[0]
     except TypeError:
         last_date = None
+        destinatario = Variable.get("destinatario")
+        enviar_mails(
+            "Crypto ETL",
+            f"No hay datos en la tabla cryptos, last_date:{last_date}",
+            destinatario,
+        )
 
     print(f"La ultima fecha de datos es {last_date}")
     print(dt.date.today().strftime("%d %b %Y %H:%M:%S"))
@@ -74,6 +82,8 @@ def crypto_activo(coins, api_key, api_secret, conn):
     if last_date is None:
         after_date = periodo
     else:
+        # last_date + 1 day
+        last_date = last_date + pd.offsets.Day(1)
         after_date = (last_date).strftime("%d %b %Y %H:%M:%S")
 
         print(f"La fecha de datos de after date es {after_date}")
@@ -196,5 +206,46 @@ def load_datab(
                     print(f"datos de {crypto} insertados en la tabla cryptos")
 
         cur.close()
+
         print("Todos los datos ya estan cargados en la tabla cryptos")
         print("Base de datos cerrada")
+
+
+def ultimos_datos_cargados(
+    destinatario, db_name, db_user, db_password, db_host, db_port, dias
+):
+    """
+    La función `ultimos_datos_cargados` devuelve ls últimas 10 lineas de datos cargados en la tabla cryptos y los envia por mail.
+    """
+
+    conn = ddbb_conection(db_name, db_user, db_password, db_host, db_port)
+    cur = conn.cursor()
+
+    query = """
+    SELECT c.coin, c.opentime, c.openprice, c.highprice, c.lowprice, c.closeprice, c.volume
+    FROM ismaelpiovani_coderhouse.cryptos c
+    WHERE c.opentime BETWEEN %s AND %s;
+    """
+    dias = int(dias) - 1
+
+    print(f"los dias son {dias}")
+    print(type(dias))
+    cur.execute(query, (dt.date.today() - pd.offsets.Day(dias), dt.date.today()))
+    result = cur.fetchall()
+    conn.close()
+
+    if result == []:
+        enviar_mails("Crypto ETL", "No hay datos en la tabla cryptos", destinatario)
+    else:
+        # Formatea los datos en una tabla HTML
+        html_table = "<table><tr><th>Coin</th><th>OpenTime</th><th>OpenPrice</th><th>HighPrice</th><th>LowPrice</th><th>ClosePrice</th><th>Volume</th></tr>"
+        for row in result:
+            html_table += "<tr>"
+            for item in row:
+                html_table += f"<td>{item}</td>"
+            html_table += "</tr>"
+        html_table += "</table>"
+        # envio el mail con los datos
+        asunto = "Crypto ETL"
+        mail = f"AVISO:<br><br>Los últimos datos cargados son:<br><br>{html_table}"
+        enviar_mails(asunto, mail, destinatario)
