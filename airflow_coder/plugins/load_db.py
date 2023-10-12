@@ -83,7 +83,7 @@ def crypto_activo(coins, api_key, api_secret, conn):
         after_date = periodo
     else:
         # last_date + 1 day
-        last_date = last_date + pd.offsets.Day(1)
+
         after_date = (last_date).strftime("%d %b %Y %H:%M:%S")
 
         print(f"La fecha de datos de after date es {after_date}")

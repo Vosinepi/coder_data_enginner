@@ -51,8 +51,11 @@ def precio_historico(
             data["ClosePrice"] = data["ClosePrice"].astype(float)
             data["OpenTime"] = pd.to_datetime(data["OpenTime"], unit="s")
             data.reset_index(drop=True, inplace=True)
+            # remuevo los datos que coinciden con la ultima fecha de la tabla cryptos para evitar duplicados
+            data = data[data["OpenTime"] != after]
 
+            print(data)
             return data
 
 
-# print(precio_historico("BTCUSDT", api_key, api_secret, after="02 Oct 2023 00:00:00"))
+print(precio_historico("BTCUSDT", api_key, api_secret, after="11 Oct 2023 00:00:00"))

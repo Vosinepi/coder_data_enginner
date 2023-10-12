@@ -45,4 +45,7 @@ def precio_historico(
             data["OpenTime"] = pd.to_datetime(data["OpenTime"], unit="s")
             data.reset_index(drop=True, inplace=True)
 
+            # remuevo los datos que coinciden con la ultima fecha de la tabla cryptos para evitar duplicados
+            data = data[data["OpenTime"] != after]
+
             return data
